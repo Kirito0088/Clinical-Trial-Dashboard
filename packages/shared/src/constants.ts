@@ -48,6 +48,7 @@ export const FLAG_TYPES = [
   'SERIOUS_UNRESOLVED',
   'NON_ENROLLING_SITE',
   'ENROLLMENT_STALLED',
+  'OVERDUE_MILESTONE',
 ] as const;
 export type FlagType = (typeof FLAG_TYPES)[number];
 
@@ -57,6 +58,7 @@ export const FLAG_LABELS: Record<FlagType, string> = {
   SERIOUS_UNRESOLVED: 'Serious Unresolved',
   NON_ENROLLING_SITE: 'Non-Enrolling Site',
   ENROLLMENT_STALLED: 'Enrollment Stalled',
+  OVERDUE_MILESTONE: 'Overdue Milestone',
 };
 
 // ── Intervention types ──────────────────────────────────────────────────────
