@@ -63,6 +63,23 @@ async function getDb() {
   }
 }
 
+// ── In-memory TTL cache (eliminates repeat Supabase round-trips) ─────────────
+interface CacheEntry<T> { value: T; expiresAt: number; }
+const cache = new Map<string, CacheEntry<unknown>>();
+
+function cacheGet<T>(key: string): T | null {
+  const entry = cache.get(key) as CacheEntry<T> | undefined;
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) { cache.delete(key); return null; }
+  return entry.value;
+}
+function cacheSet<T>(key: string, value: T, ttlMs: number): void {
+  cache.set(key, { value, expiresAt: Date.now() + ttlMs });
+}
+function cacheInvalidate(pattern: string): void {
+  for (const key of cache.keys()) { if (key.includes(pattern)) cache.delete(key); }
+}
+
 // ── Monitoring configuration ─────────────────────────────────────────────────
 const AS_OF = new Date('2026-09-01T00:00:00.000Z');
 const CONFIG: AppConfig = {
@@ -329,6 +346,10 @@ Return ONLY valid JSON with exactly these fields:
  * Returns null if not found or DB unavailable.
  */
 async function loadTrialFromDb(trialId: string): Promise<TrialDetail | null> {
+  const cacheKey = `trial:${trialId}`;
+  const cached = cacheGet<TrialDetail>(cacheKey);
+  if (cached) return cached;
+
   const db = await getDb();
   if (!db) return null;
 
@@ -578,12 +599,18 @@ async function loadTrialFromDb(trialId: string): Promise<TrialDetail | null> {
       generatedAt: trial.insight.generatedAt.toISOString(),
     } : null,
   };
+  cacheSet(cacheKey, result, 120_000); // 2 min TTL
+  return result;
 }
 
 /**
  * Load all trials as cards from Supabase.
  */
 async function loadTrialsFromDb(filters: Record<string, string> = {}): Promise<TrialCard[] | null> {
+  const cacheKey = `trials:${JSON.stringify(filters)}`;
+  const cached = cacheGet<TrialCard[]>(cacheKey);
+  if (cached) return cached;
+
   const db = await getDb();
   if (!db) return null;
 
@@ -611,7 +638,7 @@ async function loadTrialsFromDb(filters: Record<string, string> = {}): Promise<T
     orderBy: { id: 'asc' },
   });
 
-  return trials.map((trial) => {
+  const result = trials.map((trial) => {
     const subjects = trial.subjects ?? [];
     const enrolled = subjects.filter((s) => s.enrolledDate).length;
     const withdrawn = subjects.filter((s) => s.withdrawnDate).length;
@@ -700,6 +727,8 @@ async function loadTrialsFromDb(filters: Record<string, string> = {}): Promise<T
       flagCount: flags.length,
     };
   });
+  cacheSet(cacheKey, result, 60_000); // 1 min TTL
+  return result;
 }
 
 // ── Fixture fallback data ─────────────────────────────────────────────────────
