@@ -40,7 +40,6 @@ function tryPlay(video) {
    SCROLL REVEAL & VIDEO LIFECYCLE MANAGEMENT
    ============================================================ */
 function setupRevealAndVideos() {
-  // Reveal observer for text and cards
   const revealIo = new IntersectionObserver((entries) => {
     entries.forEach(e => {
       if (e.isIntersecting) {
@@ -51,7 +50,6 @@ function setupRevealAndVideos() {
 
   document.querySelectorAll('.reveal, .lp-feature-item, .lp-callout, .lp-trace-step, .lp-rec-card').forEach(el => revealIo.observe(el));
 
-  // Video playback observer to ensure smooth performance
   const videoIo = new IntersectionObserver((entries) => {
     entries.forEach(e => {
       const video = e.target.querySelector('video');
@@ -183,7 +181,7 @@ function buildHero() {
     </p>
 
     <div class="lp-hero-actions reveal" style="transition-delay:0.22s">
-      <a href="#section-dashboard" class="lp-hero-cta-primary" id="hero-cta-explore">
+      <a href="/index.html" class="lp-hero-cta-primary" id="hero-cta-explore">
         Explore the Dashboard
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="3" y1="8" x2="13" y2="8"/><polyline points="9,4 13,8 9,12"/>
@@ -459,7 +457,7 @@ function buildRecommendations() {
         <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="8" cy="8" r="6"/><line x1="8" y1="10" x2="8" y2="8"/><circle cx="8" cy="5.5" r="0.5" fill="currentColor"/>
         </svg>
-        Visual preview — the interactive recommendation engine runs live below.
+        Visual preview — the interactive system lives in the dashboard.
       </div>
     </div>
   `;
@@ -475,82 +473,25 @@ function buildRecommendations() {
 }
 
 /* ============================================================
-   SECTION 06 — LIVE MONITORING WORKSPACE (Interactive Dashboard)
+   SECTION 06 — FINAL DASHBOARD TRANSITION (Clean Description & CTA)
    ============================================================ */
-function buildDashboardSection() {
+function buildDashboardTransition() {
   const section = document.createElement('section');
-  section.className = 'lp-dashboard-section lp-section';
+  section.className = 'lp-transition-section lp-section';
   section.id = 'section-dashboard';
 
   section.innerHTML = `
-    <div class="lp-dashboard-container">
-      <!-- Section Header -->
-      <div class="lp-dashboard-header text-center mb-8">
-        <div class="lp-eyebrow justify-center mb-2 reveal">LIVE MONITORING WORKSPACE</div>
-        <h2 class="lp-section-headline text-white mb-3 reveal" style="transition-delay:0.08s">
-          See the signals in context.
-        </h2>
-        <p class="lp-hero-subhead text-white/70 mx-auto max-w-2xl reveal" style="transition-delay:0.16s">
-          Explore trials, enrollment, adverse events, milestones and operational recommendations in the live monitoring workspace.
-        </p>
-      </div>
-
-      <!-- Live Interactive Window Frame -->
-      <div class="lp-workspace-window-frame reveal" style="transition-delay:0.24s">
-        <!-- Window Chrome Top Bar -->
-        <div class="lp-window-topbar">
-          <div class="lp-window-dots">
-            <span class="w-2.5 h-2.5 rounded-full bg-[#ff5f56]"></span>
-            <span class="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]"></span>
-            <span class="w-2.5 h-2.5 rounded-full bg-[#27c93f]"></span>
-          </div>
-          <div class="lp-window-title">
-            <span class="material-symbols-outlined text-xs text-primary">biotech</span>
-            <span>Clinical Trial Monitoring Workspace — Live Interactive Session</span>
-          </div>
-          <div class="lp-window-actions">
-            <a href="/index.html" class="lp-window-btn" title="Open Fullscreen Workspace">
-              <span class="material-symbols-outlined text-xs">open_in_new</span> Fullscreen
-            </a>
-          </div>
-        </div>
-
-        <!-- Embedded Live Application -->
-        <div class="lp-window-canvas">
-          <iframe 
-            src="/index.html" 
-            title="Clinical Trial Monitoring Dashboard"
-            class="lp-embedded-app"
-            loading="lazy"
-            allow="fullscreen"
-          ></iframe>
-        </div>
-      </div>
-    </div>
-  `;
-
-  return section;
-}
-
-/* ============================================================
-   SECTION 07 — CLOSING CTA
-   ============================================================ */
-function buildClosingCta() {
-  const section = document.createElement('section');
-  section.className = 'lp-closing-section lp-section';
-  section.id = 'section-closing';
-
-  section.innerHTML = `
-    <div class="lp-closing-content text-center">
-      <h2 class="lp-closing-headline reveal">
-        Built for clearer trial oversight.
+    <div class="lp-transition-content text-center">
+      <div class="lp-eyebrow justify-center mb-2 reveal">LIVE MONITORING WORKSPACE</div>
+      <h2 class="lp-transition-headline reveal" style="transition-delay:0.08s">
+        The monitoring workspace.
       </h2>
-      <p class="lp-closing-subhead reveal" style="transition-delay:0.08s">
-        A unified monitoring workflow for enrollment, safety and milestones.
+      <p class="lp-transition-subtext reveal" style="transition-delay:0.16s">
+        Explore trials, enrollment, adverse events, milestones and operational recommendations in the live monitoring workspace.
       </p>
-      <div class="lp-closing-actions reveal" style="transition-delay:0.16s">
+      <div class="lp-hero-actions justify-center mt-6 reveal" style="transition-delay:0.24s">
         <a href="/index.html" class="lp-hero-cta-primary">
-          Explore Dashboard
+          Open Dashboard
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="3" y1="8" x2="13" y2="8"/><polyline points="9,4 13,8 9,12"/>
           </svg>
@@ -559,7 +500,7 @@ function buildClosingCta() {
           Back to Overview
         </a>
       </div>
-      <div class="lp-closing-disclaimer reveal" style="transition-delay:0.24s">
+      <div class="lp-transition-disclaimer reveal" style="transition-delay:0.32s">
         <span class="material-symbols-outlined text-xs">info</span>
         All data is synthetic. Thresholds and recommendations are demonstration workflow values, not clinical or regulatory standards.
       </div>
@@ -617,8 +558,7 @@ function init() {
   document.body.appendChild(buildFinds());
   document.body.appendChild(buildTrust());
   document.body.appendChild(buildRecommendations());
-  document.body.appendChild(buildDashboardSection());
-  document.body.appendChild(buildClosingCta());
+  document.body.appendChild(buildDashboardTransition());
 
   // Attach interactive behaviors
   setupNavAndModals();
