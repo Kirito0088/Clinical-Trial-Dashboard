@@ -14,6 +14,60 @@ class DashboardState {
       region: 'ALL',
       searchQuery: ''
     };
+    this.settings = {
+      enrollmentThreshold: 25, // % shortfall
+      saeAlertWindow: 'immediate', // 'immediate' | '24h' | '48h'
+      milestoneHorizon: 30, // days
+      density: 'comfortable', // 'comfortable' | 'compact'
+      emailAlerts: true,
+      inAppAlerts: true
+    };
+    this.notifications = [
+      {
+        id: 'notif-1',
+        trialId: 'CT-114',
+        type: 'critical',
+        title: 'Safety alert: Grade 3 Thrombocytopenia',
+        desc: 'Active SAE in subject PT-1141 at Northwestern Memorial. Safety pause under consideration.',
+        timestamp: '10m ago',
+        read: false,
+        actionTab: 'events',
+        targetId: 'AE-1141'
+      },
+      {
+        id: 'notif-2',
+        trialId: 'CT-042',
+        type: 'attention',
+        title: 'Enrollment shortfall detected (-35%)',
+        desc: 'Site 103 (Johns Hopkins) is pacing below trajectory due to IRB amendment delay.',
+        timestamp: '1h ago',
+        read: false,
+        actionTab: 'patients',
+        targetId: 'SITE-103'
+      },
+      {
+        id: 'notif-3',
+        trialId: 'CT-102',
+        type: 'critical',
+        title: 'Active Cytokine Release Syndrome (Grade 3)',
+        desc: 'Subject PT-1021 dosed in Cohort 2 experiencing active CRS. Review prior to dose escalation.',
+        timestamp: '3h ago',
+        read: false,
+        actionTab: 'events',
+        targetId: 'AE-1021'
+      },
+      {
+        id: 'notif-4',
+        trialId: 'CT-089',
+        type: 'info',
+        title: 'Interim Data Lock Milestone Approaching',
+        desc: '64 days remaining until planned interim data cut for European NSCLC cohort.',
+        timestamp: '1d ago',
+        read: true,
+        actionTab: 'milestones',
+        targetId: 'M-89-1'
+      }
+    ];
     this.activeModal = null; // { type, data }
     this.listeners = new Set();
   }
@@ -84,6 +138,28 @@ class DashboardState {
     this.notify({ type: 'search_changed', query });
   }
 
+  updateSettings(newSettings) {
+    this.settings = { ...this.settings, ...newSettings };
+    this.notify({ type: 'settings_updated', settings: this.settings });
+  }
+
+  markNotificationRead(id) {
+    const notif = this.notifications.find(n => n.id === id);
+    if (notif) {
+      notif.read = true;
+      this.notify({ type: 'notifications_updated' });
+    }
+  }
+
+  markAllNotificationsRead() {
+    this.notifications.forEach(n => { n.read = true; });
+    this.notify({ type: 'notifications_updated' });
+  }
+
+  getUnreadNotificationsCount() {
+    return this.notifications.filter(n => !n.read).length;
+  }
+
   openModal(type, data = null) {
     this.activeModal = { type, data };
     this.notify({ type: 'modal_opened', modal: type });
@@ -92,6 +168,52 @@ class DashboardState {
   closeModal() {
     this.activeModal = null;
     this.notify({ type: 'modal_closed' });
+  }
+
+  /**
+   * Search across trials, patients, adverse events and sites
+   */
+  searchDataset(query) {
+    if (!query || query.trim() === '') {
+      return { trials: [], patients: [], events: [] };
+    }
+    const q = query.toLowerCase().trim();
+
+    const matchedTrials = this.trials.filter(t => 
+      t.id.toLowerCase().includes(q) ||
+      t.title.toLowerCase().includes(q) ||
+      t.indication.toLowerCase().includes(q) ||
+      t.description.toLowerCase().includes(q)
+    ).slice(0, 4);
+
+    const matchedPatients = [];
+    const matchedEvents = [];
+
+    for (const trial of this.trials) {
+      if (trial.patients) {
+        for (const p of trial.patients) {
+          if (p.id.toLowerCase().includes(q) || p.site.toLowerCase().includes(q) || (p.cohort && p.cohort.toLowerCase().includes(q))) {
+            matchedPatients.push({ ...p, trialId: trial.id });
+            if (matchedPatients.length >= 4) break;
+          }
+        }
+      }
+      if (trial.adverseEvents) {
+        for (const ae of trial.adverseEvents) {
+          if (ae.id.toLowerCase().includes(q) || ae.term.toLowerCase().includes(q) || (ae.site && ae.site.toLowerCase().includes(q))) {
+            matchedEvents.push({ ...ae, trialId: trial.id });
+            if (matchedEvents.length >= 4) break;
+          }
+        }
+      }
+      if (matchedPatients.length >= 4 && matchedEvents.length >= 4) break;
+    }
+
+    return {
+      trials: matchedTrials,
+      patients: matchedPatients,
+      events: matchedEvents
+    };
   }
 
   getFilteredTrials() {

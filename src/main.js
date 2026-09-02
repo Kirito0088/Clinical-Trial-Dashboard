@@ -11,6 +11,11 @@ import { renderAeReportModal } from './components/modals/aeReportModal.js';
 import { renderMilestoneModal } from './components/modals/milestoneModal.js';
 import { renderFilterPopover } from './components/modals/filterPopover.js';
 import { renderDemoDatasetModal } from './components/modals/demoDatasetModal.js';
+import { renderNotificationsModal } from './components/modals/notificationsModal.js';
+import { renderHelpModal } from './components/modals/helpModal.js';
+import { renderProfileModal } from './components/modals/profileModal.js';
+import { renderDocumentPreviewModal } from './components/modals/documentPreviewModal.js';
+import { renderSignOutModal } from './components/modals/signOutModal.js';
 
 // Views
 import { renderTrialsView } from './components/views/trialsView.js';
@@ -32,7 +37,7 @@ function renderDashboardLayout(mainContent) {
       <div class="hidden sm:flex items-center gap-2 text-xs text-on-surface-variant">
         <span class="inline-flex items-center gap-1 bg-surface-alternate px-2.5 py-1 rounded-DEFAULT border border-border-soft">
           <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-          Live Monitoring Active
+          Live Telemetry Active
         </span>
       </div>
     </div>
@@ -72,8 +77,18 @@ function handleStateUpdate(state, event) {
         renderMilestoneModal(modalContainer, modal.data);
       } else if (modal.type === 'filter') {
         renderFilterPopover(modalContainer);
-      } else if (modal.type === 'demo_dataset' || modal.type === 'notifications') {
+      } else if (modal.type === 'demo_dataset') {
         renderDemoDatasetModal(modalContainer);
+      } else if (modal.type === 'notifications') {
+        renderNotificationsModal(modalContainer);
+      } else if (modal.type === 'help') {
+        renderHelpModal(modalContainer);
+      } else if (modal.type === 'profile') {
+        renderProfileModal(modalContainer);
+      } else if (modal.type === 'document_preview') {
+        renderDocumentPreviewModal(modalContainer, modal.data);
+      } else if (modal.type === 'sign_out') {
+        renderSignOutModal(modalContainer);
       }
       return;
     }
@@ -102,7 +117,6 @@ function handleStateUpdate(state, event) {
 
   // If we're on the dashboard tab
   if (currentTab === 'dashboard') {
-    // Check if dashboard layout already exists in DOM
     let metricsStripContainer = document.getElementById('metrics-strip-container');
     let trialTableContainer = document.getElementById('trial-table-container');
     let inspectionPanelContainer = document.getElementById('inspection-panel-container');
@@ -137,10 +151,19 @@ function handleStateUpdate(state, event) {
     }
   }
 
-  // Always keep sidebar active state updated
+  // Always keep sidebar and header updated
   if (sidebarContainer) renderSidebar(sidebarContainer);
   if (headerContainer) renderHeader(headerContainer);
 }
+
+// Global Escape Key to close active modal
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (dashboardState.activeModal) {
+      dashboardState.closeModal();
+    }
+  }
+});
 
 // Initial Boot & Subscription
 document.addEventListener('DOMContentLoaded', () => {
