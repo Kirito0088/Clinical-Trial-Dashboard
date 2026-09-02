@@ -41,25 +41,47 @@ export function renderTrialTable(container) {
         ` : filteredTrials.map(trial => {
           const isSelected = trial.id === selectedTrialId;
 
-          const statusDot = trial.status === 'critical'
+          // Prefer backend healthStatus when available, fall back to local status
+          const resolvedStatus = trial.healthStatus
+            ? (trial.healthStatus === 'CRITICAL' ? 'critical' : trial.healthStatus === 'WATCH' ? 'attention' : 'on_track')
+            : trial.status;
+
+          const statusDot = resolvedStatus === 'critical'
             ? 'bg-critical'
-            : trial.status === 'attention'
+            : resolvedStatus === 'attention'
               ? 'bg-on-tertiary-container'
               : 'bg-primary';
 
-          const statusLabel = trial.status === 'critical'
+          const statusLabel = resolvedStatus === 'critical'
             ? 'Critical'
-            : trial.status === 'attention'
+            : resolvedStatus === 'attention'
               ? 'Attention'
               : 'On Track';
 
-          const statusTextColor = trial.status === 'critical'
+          const statusTextColor = resolvedStatus === 'critical'
             ? 'text-critical'
-            : trial.status === 'attention'
+            : resolvedStatus === 'attention'
               ? 'text-on-tertiary-container'
               : 'text-primary';
 
-          const aeClass = trial.aesSevere > 0 ? 'text-critical font-semibold' : 'text-on-surface-variant';
+          const aeClass = (trial.aesSevere > 0 || (trial.aeSummary?.byGrade?.SEVERE + trial.aeSummary?.byGrade?.CRITICAL) > 0)
+            ? 'text-critical font-semibold' : 'text-on-surface-variant';
+
+          // Backend health score badge
+          const healthScoreBadge = trial.healthScore != null
+            ? `<span class="text-[9px] font-bold px-1 py-0 rounded-sm border ${
+                resolvedStatus === 'critical' ? 'border-critical/40 text-critical bg-critical/5'
+                : resolvedStatus === 'attention' ? 'border-amber-400/40 text-amber-600 bg-amber-50'
+                : 'border-primary/30 text-primary bg-primary/5'
+              }">${trial.healthScore}</span>` : '';
+
+          const flagBadge = (trial.flagCount ?? trial.flags?.length ?? 0) > 0
+            ? `<span class="text-[9px] font-semibold text-critical bg-critical/10 border border-critical/20 px-1 py-0 rounded-sm">
+                ${trial.flagCount ?? trial.flags?.length} flag${(trial.flagCount ?? trial.flags?.length) > 1 ? 's' : ''}
+               </span>` : '';
+
+          const totalAEs = trial.aeSummary?.total ?? trial.aesTotal ?? 0;
+          const severeAEs = (trial.aeSummary?.byGrade?.SEVERE ?? 0) + (trial.aeSummary?.byGrade?.CRITICAL ?? 0) || trial.aesSevere || 0;
 
           return `
             <div
@@ -78,7 +100,9 @@ export function renderTrialTable(container) {
                 <div class="flex items-center justify-between mb-0.5">
                   <div class="flex items-center gap-1.5">
                     <span class="font-mono font-bold text-xs text-primary ${isSelected ? 'font-extrabold' : ''}">${trial.id}</span>
-                    <span class="text-[10px] text-on-surface-variant font-medium border border-border-soft px-1 py-0 rounded-sm bg-surface-base">Ph. ${trial.phase}</span>
+                    <span class="text-[10px] text-on-surface-variant font-medium border border-border-soft px-1 py-0 rounded-sm bg-surface-base">Ph. ${trial.phase?.replace('PHASE_', '')}</span>
+                    ${healthScoreBadge}
+                    ${flagBadge}
                   </div>
                   <div class="flex items-center gap-1">
                     <span class="w-1.5 h-1.5 rounded-full flex-shrink-0 ${statusDot}"></span>
@@ -92,23 +116,23 @@ export function renderTrialTable(container) {
                 <!-- Row 3: Enrollment Progress Bar -->
                 <div class="mb-1.5">
                   <div class="flex items-center justify-between mb-0.5">
-                    <span class="text-[10px] text-on-surface-variant">${trial.enrolled} / ${trial.target}</span>
-                    <span class="text-[10px] font-semibold text-primary">${trial.percentage}%</span>
+                    <span class="text-[10px] text-on-surface-variant">${trial.enrolled ?? trial.funnel?.enrolled ?? 0} / ${trial.target ?? trial.targetEnrollment ?? 0}</span>
+                    <span class="text-[10px] font-semibold text-primary">${trial.percentage ?? Math.round((trial.enrollmentProgress ?? 0) * 100)}%</span>
                   </div>
                   <div class="w-full h-1 bg-surface-variant rounded-full overflow-hidden">
-                    <div class="h-full bg-primary transition-all duration-300" style="width: ${trial.percentage}%"></div>
+                    <div class="h-full bg-primary transition-all duration-300" style="width: ${trial.percentage ?? Math.round((trial.enrollmentProgress ?? 0) * 100)}%"></div>
                   </div>
                 </div>
 
-                <!-- Row 4: AEs + Region/Status -->
+                <!-- Row 4: AEs + Condition -->
                 <div class="flex items-center justify-between text-[10px]">
                   <span class="${aeClass}">
-                    ${trial.aesTotal > 0
-                      ? `${trial.aesTotal} AE${trial.aesTotal !== 1 ? 's' : ''}${trial.aesSevere > 0 ? ` (${trial.aesSevere} severe)` : ''}`
+                    ${totalAEs > 0
+                      ? `${totalAEs} AE${totalAEs !== 1 ? 's' : ''}${severeAEs > 0 ? ` (${severeAEs} severe)` : ''}`
                       : '<span class="text-on-surface-variant">No active AEs</span>'
                     }
                   </span>
-                  <span class="text-on-surface-variant">${trial.region}</span>
+                  <span class="text-on-surface-variant">${trial.region ?? trial.conditionArea ?? trial.indication ?? ''}</span>
                 </div>
               </div>
             </div>

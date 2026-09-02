@@ -17,7 +17,7 @@ const envSchema = z.object({
   // AI provider — only gemini is supported; falls back to no-op
   AI_PROVIDER: z.enum(['gemini', 'mock']).default('gemini'),
   GEMINI_API_KEY: z.string().default(''),
-  GEMINI_MODEL: z.string().default('gemini-2.5-flash'),
+  GEMINI_MODEL: z.string().default('gemini-3.6-flash'),
 });
 
 const parsed = envSchema.safeParse(process.env);
