@@ -1,0 +1,128 @@
+@import 'tailwindcss';
+@import 'leaflet/dist/leaflet.css';
+
+/*
+ * Design tokens.
+ *
+ * RE-THEMING AT THE HACKATHON: change --signal (and optionally --calm) and the
+ * whole app follows. Everything else is a neutral ramp that works under any
+ * accent, so a 30-second edit here is the entire rebrand.
+ *
+ * The type roles are deliberate:
+ *   display -> Space Grotesk  (headings, page titles)
+ *   sans    -> Inter          (all prose and controls)
+ *   mono    -> JetBrains Mono (every number, id, status and metadata label)
+ * Numbers living in mono is the rule that makes the UI read as instrumentation
+ * rather than as a generic dashboard. Keep it.
+ */
+
+@theme {
+  --font-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace;
+
+  --color-ink: #10151c;
+  --color-slate: #5a6675;
+  --color-line: #e3e7ec;
+  --color-paper: #f7f8fa;
+  --color-surface: #ffffff;
+
+  /* The one bold colour. Swap this to rebrand. */
+  --color-signal: #d9541e;
+  --color-signal-soft: #fdefe8;
+
+  /* Secondary data series / positive state. */
+  --color-calm: #147d75;
+  --color-calm-soft: #e6f4f2;
+
+  --color-warn: #b45309;
+  --color-warn-soft: #fef3c7;
+  --color-danger: #b42318;
+  --color-danger-soft: #fee4e2;
+
+  --radius-card: 8px;
+}
+
+:root {
+  --bg: var(--color-paper);
+  --fg: var(--color-ink);
+  --muted: var(--color-slate);
+  --border: var(--color-line);
+  --card: var(--color-surface);
+}
+
+/* Dark theme is opt-in via .dark on <html>, toggled from the topbar. */
+.dark {
+  --bg: #0b0f14;
+  --fg: #e8ecf1;
+  --muted: #93a1b1;
+  --border: #1e2732;
+  --card: #121820;
+  --color-signal-soft: #2a1810;
+  --color-calm-soft: #0d2320;
+  --color-warn-soft: #2a1f0a;
+  --color-danger-soft: #2a1210;
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  color-scheme: light;
+}
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'cv11', 'ss01';
+}
+
+/* Tabular figures everywhere numbers are compared down a column. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Visible keyboard focus is non-negotiable — never remove without replacing. */
+:focus-visible {
+  outline: 2px solid var(--color-signal);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Leaflet paints its own white ground; keep it consistent in dark mode. */
+.dark .leaflet-container {
+  background: #0b0f14;
+}
+.leaflet-container {
+  font-family: var(--font-sans);
+}
+
+/* Live-tick pulse used by the status strip. Single ambient animation in the app. */
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}

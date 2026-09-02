@@ -1,0 +1,31 @@
+node_modules/
+dist/
+build/
+.env
+.env.local
+*.local
+
+# uploads / runtime artifacts
+apps/api/uploads/
+apps/api/.mongo-data/
+
+# python sidecar
+apps/ml/.venv/
+apps/ml/__pycache__/
+**/__pycache__/
+*.pyc
+
+# editor / os
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# caches
+.cache/
+.turbo/
+coverage/
+*.tsbuildinfo
+
+# mongodb-memory-server binaries (pre-warmed locally, never committed)
+.cache/mongodb-binaries/
