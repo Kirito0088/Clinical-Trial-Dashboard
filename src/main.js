@@ -29,7 +29,7 @@ let isInitialRender = true;
 function renderDashboardLayout(mainContent) {
   mainContent.innerHTML = `
     <!-- Page Title Area -->
-    <div class="mb-5 select-none flex justify-between items-center">
+    <div class="mb-4 select-none flex justify-between items-center">
       <div>
         <h2 class="font-headline-md text-headline-md font-bold text-on-background">Clinical Trials Dashboard</h2>
         <p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Overview of active synthetic cohorts and real-time monitoring workspace.</p>
@@ -45,13 +45,13 @@ function renderDashboardLayout(mainContent) {
     <!-- Summary Metrics Strip -->
     <div id="metrics-strip-container"></div>
 
-    <!-- Three-part Monitoring Workspace Grid (Inbox layout) -->
-    <div class="grid grid-cols-12 gap-4 h-[calc(100vh-270px)] min-h-[540px]">
-      <!-- Left/Center: Trial Monitoring Roster (8 cols) -->
-      <div id="trial-table-container" class="col-span-8 h-full"></div>
+    <!-- Gmail-style Workspace: 30% Trial List | 70% Selected Trial Workspace -->
+    <div style="display:grid; grid-template-columns: minmax(260px, 30%) 1fr; gap: 16px; height: calc(100vh - 260px); min-height: 560px;">
+      <!-- Left: Compact Trial Monitoring Roster (~30%) -->
+      <div id="trial-table-container" class="h-full min-w-0"></div>
 
-      <!-- Right: Selected Trial Workspace Panel (4 cols) -->
-      <div id="inspection-panel-container" class="col-span-4 h-full"></div>
+      <!-- Right: Primary Selected Trial Workspace (~70%) -->
+      <div id="inspection-panel-container" class="h-full min-w-0"></div>
     </div>
   `;
 }

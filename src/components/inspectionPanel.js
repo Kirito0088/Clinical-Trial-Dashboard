@@ -159,127 +159,183 @@ function renderTabContent(trial, tab, selectedPatientId, selectedEventId, rec, p
 // TAB 1: OVERVIEW VIEW
 // -------------------------------------------------------------
 function renderOverviewView(trial, rec, priorityBadgeColor, funnel) {
+  // Derive health state label and styling
+  const healthState = trial.status === 'critical'
+    ? { label: 'Critical Attention', color: 'text-critical', dot: 'bg-critical', reason: `${trial.aesSevere} unresolved severe adverse event(s) require medical monitor clearance.` }
+    : trial.status === 'attention'
+      ? { label: 'Attention Needed', color: 'text-on-tertiary-container', dot: 'bg-on-tertiary-container', reason: 'Enrollment is below expected trajectory or a gating milestone is approaching.' }
+      : { label: 'On Track', color: 'text-primary', dot: 'bg-primary', reason: 'No critical issues. Enrollment and milestones progressing within expected ranges.' };
+
+  const upcomingMilestones = (trial.milestones || []).filter(m => !m.completed).slice(0, 3);
+  const ringPct = Math.min(trial.percentage, 100);
+  const circumference = Math.round(2 * Math.PI * 32);
+  const ringOffset = Math.round(circumference * (1 - ringPct / 100));
+  const ringColor = trial.status === 'critical' ? '#B91C1C' : trial.status === 'attention' ? '#f08921' : '#052920';
+
   return `
-    <!-- Section 1: Enrollment Status -->
-    <div>
-      <div class="flex items-center justify-between mb-2">
-        <h4 class="font-label-md text-label-md font-semibold text-on-surface flex items-center gap-1.5">
-          <span class="material-symbols-outlined text-sm text-on-surface-variant">group_add</span> Enrollment Status
+    <!-- TOP ROW: Enrollment + Trial Health side-by-side -->
+    <div class="grid grid-cols-2 gap-3">
+
+      <!-- Card: Enrollment Progress -->
+      <div class="bg-surface-base border border-border-soft rounded-DEFAULT p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h4 class="font-label-md text-label-md font-semibold text-on-surface flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-sm text-on-surface-variant">group_add</span>
+            Enrollment Progress
+          </h4>
+          <button id="tab-goto-patients" class="font-label-sm text-[11px] text-primary hover:underline flex items-center gap-0.5 cursor-pointer font-medium">
+            Sites <span class="material-symbols-outlined text-xs">arrow_forward</span>
+          </button>
+        </div>
+        <div class="flex items-end justify-between mb-1.5">
+          <span class="text-3xl font-bold text-on-background leading-none">${trial.enrolled}</span>
+          <span class="text-sm font-semibold text-primary">${trial.percentage}%</span>
+        </div>
+        <div class="w-full h-2 bg-surface-variant rounded-full overflow-hidden mb-1.5">
+          <div class="h-full bg-primary transition-all duration-300 rounded-full" style="width: ${trial.percentage}%"></div>
+        </div>
+        <div class="flex justify-between text-[11px] text-on-surface-variant mb-3">
+          <span>of <strong class="text-on-surface">${trial.target}</strong> target</span>
+          <span>Est: <strong class="text-on-surface">${trial.estimatedCompletion}</strong></span>
+        </div>
+        <!-- Participant funnel -->
+        <div class="grid grid-cols-4 gap-1 pt-3 border-t border-border-soft text-center text-[10px]">
+          <div>
+            <div class="text-on-surface-variant font-medium">Screened</div>
+            <div class="font-bold text-on-surface mt-0.5">${funnel.screened}</div>
+          </div>
+          <div class="border-l border-border-soft">
+            <div class="text-primary font-semibold">Enrolled</div>
+            <div class="font-bold text-primary mt-0.5">${funnel.enrolled}</div>
+          </div>
+          <div class="border-l border-border-soft">
+            <div class="text-on-surface-variant font-medium">Active</div>
+            <div class="font-bold text-on-surface mt-0.5">${funnel.active}</div>
+          </div>
+          <div class="border-l border-border-soft">
+            <div class="text-on-surface-variant font-medium">Withdrawn</div>
+            <div class="font-bold text-on-surface-variant mt-0.5">${funnel.withdrawn}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card: Trial Health -->
+      <div class="bg-surface-base border border-border-soft rounded-DEFAULT p-4 flex flex-col">
+        <h4 class="font-label-md text-label-md font-semibold text-on-surface flex items-center gap-1.5 mb-3">
+          <span class="material-symbols-outlined text-sm text-on-surface-variant">monitor_heart</span>
+          Trial Health
         </h4>
-        <button id="tab-goto-patients" class="font-label-sm text-label-sm text-primary hover:underline flex items-center gap-0.5 cursor-pointer font-medium">
-          View Sites <span class="material-symbols-outlined text-xs">arrow_forward</span>
+        <div class="flex-1 flex items-center justify-center gap-4 py-2">
+          <!-- Ring indicator -->
+          <div class="relative w-20 h-20 flex-shrink-0 flex items-center justify-center">
+            <svg class="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 80 80">
+              <circle cx="40" cy="40" r="32" fill="none" stroke="#D1D1CB" stroke-width="6"/>
+              <circle cx="40" cy="40" r="32" fill="none"
+                stroke="${ringColor}"
+                stroke-width="6"
+                stroke-linecap="round"
+                stroke-dasharray="${circumference}"
+                stroke-dashoffset="${ringOffset}"/>
+            </svg>
+            <span class="text-xs font-bold ${healthState.color}">${trial.percentage}%</span>
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5 mb-1">
+              <span class="w-2 h-2 rounded-full ${healthState.dot} flex-shrink-0"></span>
+              <span class="font-semibold text-sm ${healthState.color}">${healthState.label}</span>
+            </div>
+            <p class="text-[11px] text-on-surface-variant leading-relaxed max-w-[180px]">${healthState.reason}</p>
+          </div>
+        </div>
+        <div class="mt-auto pt-3 border-t border-border-soft text-[11px] text-on-surface-variant flex justify-between">
+          <span>Region: <strong class="text-on-surface">${trial.region}</strong></span>
+          <span>Sites: <strong class="text-on-surface">${trial.sites?.length || '—'}</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MIDDLE ROW: Adverse Events + Milestones side-by-side -->
+    <div class="grid grid-cols-2 gap-3">
+
+      <!-- Card: Adverse Events -->
+      <div class="bg-surface-base border border-border-soft rounded-DEFAULT p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h4 class="font-label-md text-label-md font-semibold text-on-surface flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-sm text-critical">medical_services</span>
+            Adverse Events
+            ${trial.aesSevere > 0 ? `<span class="text-[9px] font-bold text-critical bg-error-container px-1.5 py-0.5 rounded-sm uppercase">Severe Active</span>` : ''}
+          </h4>
+          <button id="tab-goto-events" class="font-label-sm text-[11px] text-primary hover:underline cursor-pointer font-medium flex items-center gap-0.5">
+            Reports <span class="material-symbols-outlined text-xs">arrow_forward</span>
+          </button>
+        </div>
+        <div class="grid grid-cols-3 gap-2 text-center text-xs mb-3">
+          <div class="p-2 bg-surface-content border border-border-soft rounded-DEFAULT">
+            <div class="font-bold text-on-surface text-lg">${trial.aesTotal}</div>
+            <div class="text-on-surface-variant mt-0.5 text-[10px] uppercase font-medium">Total</div>
+          </div>
+          <div class="p-2 ${trial.aesSevere > 0 ? 'bg-error-container/20 border-error-container border' : 'bg-surface-content border border-border-soft'} rounded-DEFAULT">
+            <div class="font-bold text-lg ${trial.aesSevere > 0 ? 'text-critical' : 'text-on-surface'}">${trial.aesSevere}</div>
+            <div class="${trial.aesSevere > 0 ? 'text-critical' : 'text-on-surface-variant'} mt-0.5 text-[10px] uppercase font-medium">Severe</div>
+          </div>
+          <div class="p-2 bg-surface-content border border-border-soft rounded-DEFAULT">
+            <div class="font-bold text-on-surface text-lg">${trial.aesMildMod}</div>
+            <div class="text-on-surface-variant mt-0.5 text-[10px] uppercase font-medium">Mild/Mod</div>
+          </div>
+        </div>
+        <button id="tab-goto-events" class="w-full py-1.5 bg-surface-content border border-border-soft text-primary font-label-md text-[11px] rounded-DEFAULT hover:bg-surface-alternate transition-colors cursor-pointer text-center font-semibold">
+          View AE Reports
         </button>
       </div>
-      <div class="flex justify-between items-end mb-1.5">
-        <span class="font-headline-md text-headline-md font-semibold text-on-background">
-          ${trial.enrolled} <span class="font-body-sm text-body-sm text-on-surface-variant font-normal">/ ${trial.target}</span>
-        </span>
-        <span class="font-label-sm text-label-sm text-on-surface-variant font-medium">${trial.percentage}% Target</span>
-      </div>
-      <div class="w-full h-2 bg-surface-variant rounded-full overflow-hidden">
-        <div class="h-full bg-primary transition-all duration-300" style="width: ${trial.percentage}%"></div>
-      </div>
-      <div class="flex justify-between items-center text-xs text-on-surface-variant mt-1.5">
-        <span>Est. Completion: <strong>${trial.estimatedCompletion}</strong></span>
-        <span>Region: <strong>${trial.region}</strong></span>
+
+      <!-- Card: Milestones -->
+      <div class="bg-surface-base border border-border-soft rounded-DEFAULT p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h4 class="font-label-md text-label-md font-semibold text-on-surface flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-sm text-on-surface-variant">flag</span>
+            Milestones
+          </h4>
+          <button id="tab-goto-milestones" class="font-label-sm text-[11px] text-primary hover:underline cursor-pointer font-medium">
+            View All →
+          </button>
+        </div>
+        ${upcomingMilestones.length === 0 ? `
+          <p class="text-xs text-on-surface-variant">All milestones completed.</p>
+        ` : `
+          <ul class="space-y-2.5 relative before:absolute before:inset-y-2 before:left-[5px] before:w-[1px] before:bg-border-soft">
+            ${upcomingMilestones.map((m, idx) => {
+              const isFirst = idx === 0;
+              return `
+                <li data-milestone-target="${m.name}" class="relative pl-5 cursor-pointer group">
+                  <div class="absolute left-0 top-1 w-2.5 h-2.5 rounded-full border-2 ${isFirst ? 'border-primary bg-primary' : 'border-border-soft bg-surface-content'} group-hover:border-primary transition-colors"></div>
+                  <p class="font-body-sm text-[11px] ${isFirst ? 'font-semibold text-on-surface' : 'text-on-surface-variant'} group-hover:text-primary transition-colors leading-tight">${m.name}</p>
+                  <p class="text-[10px] text-on-surface-variant">${m.dueDays ? `In ${m.dueDays} days (${m.due})` : m.due}</p>
+                </li>
+              `;
+            }).join('')}
+          </ul>
+        `}
       </div>
     </div>
 
-    <!-- Section 2: Participant Overview Funnel -->
-    <div class="border-t border-border-soft pt-3.5">
-      <div class="flex items-center justify-between mb-2">
-        <h4 class="font-label-md text-label-md font-semibold text-on-surface flex items-center gap-1.5">
-          <span class="material-symbols-outlined text-sm text-on-surface-variant">filter_alt</span> Participant Funnel
-        </h4>
-        <button id="funnel-inspect-btn" class="font-label-sm text-label-sm text-primary hover:underline cursor-pointer">
-          Inspect Roster →
-        </button>
-      </div>
-      <div class="grid grid-cols-4 gap-1.5 bg-surface-base p-2 border border-border-soft rounded-DEFAULT text-center">
-        <div>
-          <div class="font-label-sm text-label-sm text-on-surface-variant uppercase font-medium">Screened</div>
-          <div class="font-body-sm font-semibold text-on-surface mt-0.5">${funnel.screened}</div>
-        </div>
-        <div class="border-l border-border-soft">
-          <div class="font-label-sm text-label-sm text-primary uppercase font-semibold">Enrolled</div>
-          <div class="font-body-sm font-bold text-primary mt-0.5">${funnel.enrolled}</div>
-        </div>
-        <div class="border-l border-border-soft">
-          <div class="font-label-sm text-label-sm text-on-surface-variant uppercase font-medium">Active</div>
-          <div class="font-body-sm font-semibold text-on-surface mt-0.5">${funnel.active}</div>
-        </div>
-        <div class="border-l border-border-soft">
-          <div class="font-label-sm text-label-sm text-on-surface-variant uppercase font-medium">Withdrawn</div>
-          <div class="font-body-sm font-semibold text-on-surface-variant mt-0.5">${funnel.withdrawn}</div>
+    <!-- RECOMMENDATION BLOCK (full width) -->
+    <div class="bg-surface-content border border-border-soft rounded-DEFAULT p-4">
+      <div class="flex items-start gap-3">
+        <span class="material-symbols-outlined text-on-tertiary-container text-lg mt-0.5 flex-shrink-0">priority_high</span>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-1.5 flex-wrap">
+            <h5 class="font-label-md text-label-md font-semibold text-on-background uppercase tracking-wider">Recommendation</h5>
+            <span class="px-1.5 py-0.5 border text-[9px] uppercase tracking-wider font-bold rounded-sm ${priorityBadgeColor}">
+              ${rec.priority}
+            </span>
+          </div>
+          <p class="font-body-sm text-body-sm font-semibold text-on-surface mb-1">${rec.title}</p>
+          <p class="text-[11px] text-on-surface-variant leading-relaxed mb-3">${rec.reason}</p>
+          <button id="rec-action-btn" class="px-4 py-1.5 bg-primary text-on-primary font-label-md text-[11px] font-semibold rounded-DEFAULT hover:bg-primary-container transition-colors cursor-pointer">
+            ${rec.actionText}
+          </button>
         </div>
       </div>
-    </div>
-
-    <!-- Section 3: Adverse Events Summary -->
-    <div class="border-t border-border-soft pt-3.5">
-      <div class="flex items-center justify-between mb-2">
-        <h4 class="font-label-md text-label-md font-semibold text-on-surface flex items-center gap-1.5">
-          <span class="material-symbols-outlined text-sm text-critical">medical_services</span> Adverse Events (Active)
-        </h4>
-        ${trial.aesSevere > 0 ? `
-          <span class="text-[10px] font-bold text-critical bg-error-container px-1.5 py-0.5 rounded-sm uppercase">Severe Active</span>
-        ` : ''}
-      </div>
-      <div class="grid grid-cols-2 gap-2 mb-2.5">
-        <div class="bg-surface-base border border-border-soft p-2 rounded-DEFAULT text-center">
-          <div class="font-headline-sm text-headline-sm font-bold text-critical">${trial.aesSevere}</div>
-          <div class="font-label-sm text-label-sm text-on-surface-variant uppercase mt-0.5 font-medium">Severe</div>
-        </div>
-        <div class="bg-surface-base border border-border-soft p-2 rounded-DEFAULT text-center">
-          <div class="font-headline-sm text-headline-sm font-semibold text-on-surface">${trial.aesMildMod}</div>
-          <div class="font-label-sm text-label-sm text-on-surface-variant uppercase mt-0.5 font-medium">Mild/Mod</div>
-        </div>
-      </div>
-      <button id="tab-goto-events" class="w-full py-1.5 bg-surface-content border border-border-soft text-primary font-label-md text-label-md rounded-DEFAULT hover:bg-surface-alternate transition-colors cursor-pointer text-center font-medium">
-        View AE Reports
-      </button>
-    </div>
-
-    <!-- Section 4: Upcoming Milestones -->
-    <div class="border-t border-border-soft pt-3.5">
-      <div class="flex items-center justify-between mb-2">
-        <h4 class="font-label-md text-label-md font-semibold text-on-surface flex items-center gap-1.5">
-          <span class="material-symbols-outlined text-sm text-on-surface-variant">flag</span> Milestones
-        </h4>
-        <button id="tab-goto-milestones" class="font-label-sm text-label-sm text-primary hover:underline cursor-pointer">
-          View All →
-        </button>
-      </div>
-      <ul class="space-y-2.5 relative before:absolute before:inset-y-2 before:left-[5px] before:w-[1px] before:bg-border-soft">
-        ${trial.milestones.map((m, idx) => {
-          const isActive = m.status === 'active' || idx === 0;
-          return `
-            <li data-milestone-target="${m.name}" class="relative pl-5 cursor-pointer group">
-              <div class="absolute left-0 top-1 w-2.5 h-2.5 rounded-full border-2 ${isActive ? 'border-primary bg-surface-content' : 'border-border-soft bg-surface-content'} group-hover:border-primary transition-colors"></div>
-              <p class="font-body-sm text-body-sm ${isActive ? 'font-medium text-on-surface' : 'text-on-surface-variant'} group-hover:text-primary transition-colors">${m.name}</p>
-              ${m.dueDays ? `<p class="font-label-sm text-label-sm text-on-surface-variant">Due in ${m.dueDays} days (${m.due})</p>` : `<p class="font-label-sm text-label-sm text-on-surface-variant">${m.due}</p>`}
-            </li>
-          `;
-        }).join('')}
-      </ul>
-    </div>
-
-    <!-- Section 5: Operational Recommendation Block -->
-    <div class="mt-1 bg-surface-container-low border border-border-soft rounded-DEFAULT p-3.5">
-      <div class="flex items-center gap-2 mb-1.5">
-        <span class="material-symbols-outlined text-on-tertiary-container text-sm">priority_high</span>
-        <h5 class="font-label-md text-label-md font-semibold text-on-background uppercase tracking-wider">Recommendation</h5>
-        <span class="ml-auto px-1.5 py-0.5 border text-[9px] uppercase tracking-wider font-semibold rounded-sm ${priorityBadgeColor}">
-          ${rec.priority}
-        </span>
-      </div>
-      <p class="font-body-sm text-body-sm font-semibold text-on-surface mb-1">${rec.title}</p>
-      <p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed mb-3 text-xs">
-        ${rec.reason}
-      </p>
-      <button id="rec-action-btn" class="w-full py-2 bg-primary text-on-primary font-label-md text-label-md font-medium rounded-DEFAULT hover:bg-primary-container transition-colors shadow-none cursor-pointer">
-        ${rec.actionText}
-      </button>
     </div>
   `;
 }
