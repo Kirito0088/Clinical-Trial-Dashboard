@@ -1,18 +1,24 @@
-import type { ChatMessage, ChatResponse } from '@gvhax/shared';
 import { env } from '../../config/env.js';
 import { log } from '../../lib/logger.js';
-import type { AiProvider, ChatOptions } from './provider.js';
-import { AnthropicProvider } from './providers/anthropic.js';
+import type { AiProvider, ChatOptions, ChatMessage, ChatResult } from './provider.js';
 import { GeminiProvider } from './providers/gemini.js';
-import { MockProvider } from './providers/mock.js';
-import { OllamaProvider } from './providers/ollama.js';
-import { OpenAiProvider } from './providers/openai.js';
+
+// ── Inline mock provider ────────────────────────────────────────────────────
+
+class MockProvider implements AiProvider {
+  readonly name = 'mock';
+  isConfigured(): boolean {
+    return true;
+  }
+  async chat(_messages: ChatMessage[], _opts?: ChatOptions): Promise<ChatResult> {
+    return { content: '(mock — no AI provider configured)', model: 'mock' };
+  }
+}
+
+// ── Registry ────────────────────────────────────────────────────────────────
 
 const registry: Record<string, AiProvider> = {
-  anthropic: new AnthropicProvider(),
-  openai: new OpenAiProvider(),
   gemini: new GeminiProvider(),
-  ollama: new OllamaProvider(),
   mock: new MockProvider(),
 };
 
@@ -25,14 +31,19 @@ export function selected(): AiProvider | null {
   return p.isConfigured() ? p : null;
 }
 
+export interface ChatResponse extends ChatResult {
+  provider: string;
+  degraded: boolean;
+  degradedReason?: string;
+}
+
 /**
  * Chat with automatic degradation.
  *
  * If the configured provider is missing credentials or the call fails for any
  * reason — no network, bad key, rate limit, timeout — we answer from the mock
  * provider instead of surfacing a 500. The response says `degraded: true` and
- * carries the reason, so the UI can show an honest banner rather than passing
- * off rule-based output as a model response.
+ * carries the reason.
  */
 export async function chat(messages: ChatMessage[], opts: ChatOptions = {}): Promise<ChatResponse> {
   const provider = selected();
@@ -59,8 +70,7 @@ export async function chat(messages: ChatMessage[], opts: ChatOptions = {}): Pro
 
 /**
  * Ask for JSON back. The model is instructed to emit only JSON, and the result
- * is defensively unwrapped — models routinely wrap JSON in ```json fences even
- * when told not to, and a demo should not die on a stray backtick.
+ * is defensively unwrapped.
  */
 export async function extractJson<T = unknown>(
   prompt: string,
@@ -95,7 +105,6 @@ export function parseLooseJson<T>(text: string): T | null {
   try {
     return JSON.parse(cleaned) as T;
   } catch {
-    // Last resort: grab the outermost {...} or [...] the model produced.
     const match = cleaned.match(/[{[][\s\S]*[}\]]/);
     if (!match) return null;
     try {
@@ -109,13 +118,10 @@ export function parseLooseJson<T>(text: string): T | null {
 /** Reported on /api/health so the team can see at a glance what is live. */
 export function aiStatus() {
   return {
-    configured: env.AI_PROVIDER,
-    active: selected()?.name ?? 'mock',
-    willDegrade: selected() === null && env.AI_PROVIDER !== 'mock',
-    available: Object.entries(registry)
-      .filter(([, p]) => p.isConfigured())
-      .map(([name]) => name),
+    provider: env.AI_PROVIDER,
+    configured: selected() !== null,
   };
 }
 
 export { registry };
+export type { ChatMessage, ChatOptions, ChatResult, AiProvider } from './provider.js';

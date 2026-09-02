@@ -1,31 +1,6 @@
-import type { ApiResponse, PageMeta } from '@gvhax/shared';
+import type { ApiResponse, PageMeta } from '@ctd/shared';
 
 const BASE = import.meta.env.VITE_API_URL ?? '';
-const TOKEN_KEY = 'gvhax.token';
-
-export const auth = {
-  get token(): string | null {
-    try {
-      return localStorage.getItem(TOKEN_KEY);
-    } catch {
-      return null;
-    }
-  },
-  set(token: string) {
-    try {
-      localStorage.setItem(TOKEN_KEY, token);
-    } catch {
-      /* private mode — the session just won't persist across reloads */
-    }
-  },
-  clear() {
-    try {
-      localStorage.removeItem(TOKEN_KEY);
-    } catch {
-      /* ignore */
-    }
-  },
-};
 
 /** Carries the server's error code and field details through to the UI. */
 export class ApiError extends Error {
@@ -59,12 +34,10 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<{
     if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, String(v));
   }
 
-  const token = auth.token;
   const res = await fetch(url.toString(), {
     ...rest,
     headers: {
       ...(body !== undefined ? { 'content-type': 'application/json' } : {}),
-      ...(token ? { authorization: `Bearer ${token}` } : {}),
       ...headers,
     },
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
@@ -75,8 +48,6 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<{
   const json = (text ? JSON.parse(text) : { ok: true, data: null }) as ApiResponse<T>;
 
   if (!json.ok) {
-    // An expired token should drop the session rather than loop on 401s.
-    if (res.status === 401) auth.clear();
     throw new ApiError(json.error.message, json.error.code, res.status, json.error.details);
   }
 
@@ -89,39 +60,4 @@ export const api = {
   post: <T>(path: string, body?: unknown) => request<T>(path, { method: 'POST', body }),
   patch: <T>(path: string, body?: unknown) => request<T>(path, { method: 'PATCH', body }),
   del: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
-
-  /** Multipart upload — must not set content-type, the browser sets the boundary. */
-  async upload<T>(path: string, file: File, field = 'file'): Promise<T> {
-    const form = new FormData();
-    form.append(field, file);
-    const token = auth.token;
-    const res = await fetch(`${BASE}/api${path}`, {
-      method: 'POST',
-      headers: token ? { authorization: `Bearer ${token}` } : {},
-      body: form,
-    });
-    const json = (await res.json()) as ApiResponse<T>;
-    if (!json.ok) throw new ApiError(json.error.message, json.error.code, res.status, json.error.details);
-    return json.data;
-  },
-
-  /** Trigger a file download from a POST endpoint (the PDF report route). */
-  async download(path: string, body: unknown, filename: string): Promise<void> {
-    const token = auth.token;
-    const res = await fetch(`${BASE}/api${path}`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) throw new ApiError('Download failed', 'DOWNLOAD', res.status);
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-  },
 };
-
-export const fileUrl = (fileId: string): string => `${BASE}/api/files/${fileId}`;

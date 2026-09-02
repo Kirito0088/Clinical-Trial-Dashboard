@@ -1,8 +1,5 @@
 import { z } from 'zod';
 
-/** Mongo ObjectId as it appears over the wire. */
-export const objectIdSchema = z.string().regex(/^[a-f\d]{24}$/i, 'Invalid id');
-
 /**
  * Every list endpoint accepts this. Keep it uniform so the DataTable
  * component and the typed API client work against any resource.
@@ -10,10 +7,8 @@ export const objectIdSchema = z.string().regex(/^[a-f\d]{24}$/i, 'Invalid id');
 export const listQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(200).default(20),
-  sort: z.string().optional(), // e.g. "-createdAt" or "title"
-  q: z.string().trim().optional(), // free-text search
-  // Arbitrary equality filters, e.g. ?stage=approved&priority=high
-  // Parsed loosely because each resource declares its own filterable fields.
+  sort: z.string().optional(),
+  q: z.string().trim().optional(),
   filters: z.record(z.string(), z.string()).optional(),
 });
 export type ListQuery = z.infer<typeof listQuerySchema>;

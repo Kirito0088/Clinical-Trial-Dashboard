@@ -1,4 +1,7 @@
-import type { ChatMessage } from '@gvhax/shared';
+export interface ChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
 
 export interface ChatOptions {
   system?: string;
@@ -21,8 +24,6 @@ export interface AiProvider {
   /** False when the provider has no usable credentials, so we skip it early. */
   isConfigured(): boolean;
   chat(messages: ChatMessage[], opts?: ChatOptions): Promise<ChatResult>;
-  /** Optional: not every provider offers embeddings (Anthropic does not). */
-  embed?(texts: string[]): Promise<number[][]>;
 }
 
 export class ProviderError extends Error {

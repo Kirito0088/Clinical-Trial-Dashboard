@@ -1,0 +1,156 @@
+// Prisma schema for Clinical Trials Dashboard
+// Models map camelCase -> snake_case with @map / @@map
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ── Enums ───────────────────────────────────────────────────────────────────
+
+enum Phase {
+  PHASE_1
+  PHASE_2
+  PHASE_3
+  PHASE_4
+}
+
+enum TrialStatus {
+  RECRUITING
+  ACTIVE
+  PAUSED
+  COMPLETED
+}
+
+enum AeSeverity {
+  MILD
+  MODERATE
+  SEVERE
+  CRITICAL
+}
+
+// ── Models ──────────────────────────────────────────────────────────────────
+
+model Trial {
+  id               String      @id                          // "CT-00325"
+  title            String
+  sponsor          String
+  phase            Phase
+  status           TrialStatus
+  conditionArea    String      @map("condition_area")
+  interventionType String      @map("intervention_type")    // Drug | Vaccine | Device | Biologic
+  targetEnrollment Int         @map("target_enrollment")
+  plannedStart     DateTime    @map("planned_start")
+  plannedEnd       DateTime    @map("planned_end")
+
+  sites         Site[]
+  subjects      Subject[]
+  adverseEvents AdverseEvent[]
+  milestones    Milestone[]
+  insight       TrialInsight?
+
+  @@map("trials")
+}
+
+model Site {
+  id               String   @id                              // "S-00325-01"
+  trialId          String   @map("trial_id")
+  trial            Trial    @relation(fields: [trialId], references: [id], onDelete: Cascade)
+  siteName         String   @map("site_name")
+  region           String
+  targetEnrollment Int      @map("target_enrollment")
+  activationDate   DateTime @map("activation_date")
+
+  subjects      Subject[]
+  adverseEvents AdverseEvent[]
+
+  @@map("sites")
+}
+
+model Subject {
+  id               String    @id                              // "SUBJ-00325-0007"
+  trialId          String    @map("trial_id")
+  siteId           String    @map("site_id")
+  trial            Trial     @relation(fields: [trialId], references: [id], onDelete: Cascade)
+  site             Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  screenedDate     DateTime  @map("screened_date")
+  enrolledDate     DateTime? @map("enrolled_date")           // null = screen fail / still screening
+  withdrawnDate    DateTime? @map("withdrawn_date")
+  screenFailReason String?   @map("screen_fail_reason")
+
+  @@map("subjects")
+}
+
+model AdverseEvent {
+  id                      String     @id                     // case_id "AE-007865"
+  trialId                 String     @map("trial_id")
+  siteId                  String     @map("site_id")
+  trial                   Trial      @relation(fields: [trialId], references: [id], onDelete: Cascade)
+  site                    Site       @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  subjectRef              String     @map("subject_ref")
+  onsetDate               DateTime   @map("onset_date")
+  resolvedDate            DateTime?  @map("resolved_date")   // null = unresolved -> escalation logic
+  term                    String                              // symptom_1 (+ symptom_2/3 in json)
+  symptoms                Json                                // [symptom_1, symptom_2, symptom_3]
+  severityGrade           AeSeverity @map("severity_grade")  // MILD | MODERATE | SEVERE | CRITICAL
+  seriousFlag             Boolean    @map("serious_flag")     // derived: hospitalization=Yes OR severity in (SEVERE,CRITICAL)
+  outcome                 String
+  drugName                String     @map("drug_name")
+  drugClass               String     @map("drug_class")
+  patientAge              Int        @map("patient_age")
+  patientSex              String     @map("patient_sex")
+  suspectedRelationship   String     @map("suspected_relationship")
+  // Gemini-enriched (from CSV; also the AI fallback source):
+  riskLevelSeed           String     @map("risk_level_seed")
+  reviewPrioritySeed      String     @map("review_priority_seed")
+  riskFactorsSeed         String     @map("risk_factors_seed")
+  staffRecommendationSeed String     @map("staff_recommendation_seed")
+  caseSummary             String     @map("case_summary")
+  eventNarrative          String     @map("event_narrative")
+  aiRecommendation        String?    @map("ai_recommendation")   // live Gemini output, cached
+  aiGeneratedAt           DateTime?  @map("ai_generated_at")
+
+  @@map("adverse_events")
+}
+
+model Milestone {
+  id          String    @id                                   // "M-00325-03"
+  trialId     String    @map("trial_id")
+  trial       Trial     @relation(fields: [trialId], references: [id], onDelete: Cascade)
+  type        String                                           // "FPFV" | "LPLV" | "DB Lock" | "Interim Analysis" | "DSMB Review"
+  plannedDate DateTime  @map("planned_date")
+  actualDate  DateTime? @map("actual_date")                   // null -> future / due-soon / overdue
+
+  @@map("milestones")
+}
+
+model TrialInsight {
+  trialId        String   @id @map("trial_id")
+  trial          Trial    @relation(fields: [trialId], references: [id], onDelete: Cascade)
+  healthScore    Int      @map("health_score")
+  healthStatus   String   @map("health_status")                // Healthy | Watch | Critical
+  scoreBreakdown Json     @map("score_breakdown")              // {enrollment, aeRate, severeMix, milestone}
+  aiSummary      String?  @map("ai_summary")                   // Gemini "what to do about this trial"
+  source         String                                        // "gemini" | "fallback"
+  generatedAt    DateTime @default(now()) @map("generated_at")
+
+  @@map("trial_insights")
+}
+
+model AppConfig {
+  id                           String   @id @default("singleton")
+  asOfDate                     DateTime @map("as_of_date")
+  milestoneHorizonDays         Int      @map("milestone_horizon_days")             // default 30
+  enrollmentShortfallThreshold Float    @map("enrollment_shortfall_threshold")     // default 0.15
+  minExposurePatientMonths     Float    @map("min_exposure_patient_months")        // default 24
+  aeRateAlert                  Float    @map("ae_rate_alert")                       // per 100 patient-months, default 15
+  seriousEventReviewWindowDays Int      @map("serious_event_review_window_days")   // default 7
+  nonEnrollingSiteGraceDays    Int      @map("non_enrolling_site_grace_days")       // default 45
+
+  @@map("app_config")
+}

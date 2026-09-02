@@ -1,5 +1,5 @@
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
-import type { ApiOk, PageMeta } from '@gvhax/shared';
+import type { ApiOk, PageMeta } from '@ctd/shared';
 
 /** Thrown anywhere in a route; normalised by the error middleware. */
 export class HttpError extends Error {

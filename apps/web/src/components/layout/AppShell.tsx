@@ -1,34 +1,18 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import {
-  Boxes,
-  LayoutDashboard,
-  LayoutGrid,
-  Map as MapIcon,
-  MessageSquare,
+  Activity,
+  BarChart3,
   Moon,
-  ScrollText,
   Sun,
-  Table2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { StatusStrip } from './StatusStrip';
-import { UserMenu } from './UserMenu';
 
 /**
- * Navigation.
- *
- * `gen:feature` appends generated features to this array — keep the shape and
- * the trailing marker comment intact or the generator's insertion point moves.
+ * Navigation for the Clinical Trials Dashboard.
  */
 const NAV = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/items', label: 'Items', icon: Boxes },
-  { to: '/datasets', label: 'Datasets', icon: Table2 },
-  { to: '/map', label: 'Map', icon: MapIcon },
-  { to: '/chat', label: 'Assistant', icon: MessageSquare },
-  { to: '/audit', label: 'Audit log', icon: ScrollText },
-  // gen:feature inserts here — do not remove this comment
+  { to: '/', label: 'Portfolio', icon: BarChart3, end: true },
 ];
 
 export function AppShell() {
@@ -39,9 +23,9 @@ export function AppShell() {
       <aside className="hidden w-56 shrink-0 flex-col border-r border-[var(--border)] bg-[var(--card)] md:flex">
         <div className="flex h-14 items-center gap-2 border-b border-[var(--border)] px-4">
           <span className="grid size-6 place-items-center rounded bg-[var(--color-signal)] font-display text-[13px] font-700 text-white">
-            G
+            <Activity className="size-3.5" />
           </span>
-          <span className="font-display text-[15px] font-600 tracking-tight">GVHAX</span>
+          <span className="font-display text-[15px] font-600 tracking-tight">CTD</span>
         </div>
 
         <nav className="flex-1 space-y-0.5 p-2">
@@ -64,28 +48,11 @@ export function AppShell() {
             </NavLink>
           ))}
         </nav>
-
-        <div className="border-t border-[var(--border)] p-2">
-          <NavLink
-            to="/_kit"
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors',
-                isActive
-                  ? 'bg-[var(--color-signal-soft)] font-500 text-[var(--color-signal)]'
-                  : 'text-[var(--muted)] hover:bg-[var(--bg)] hover:text-[var(--fg)]',
-              )
-            }
-          >
-            <LayoutGrid className="size-4 shrink-0" />
-            Component kit
-          </NavLink>
-        </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 items-center gap-3 border-b border-[var(--border)] bg-[var(--card)] px-4">
-          {/* Mobile nav: the sidebar collapses, so surface the links inline. */}
+          {/* Mobile nav */}
           <nav className="flex gap-1 overflow-x-auto md:hidden">
             {NAV.map(({ to, label, end }) => (
               <NavLink
@@ -113,11 +80,13 @@ export function AppShell() {
             >
               {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
             </button>
-            <UserMenu />
           </div>
         </header>
 
-        <StatusStrip />
+        {/* Honesty banner — always visible per PRD */}
+        <div className="border-b border-[var(--color-warn)] bg-[var(--color-warn-soft)] px-4 py-1.5 text-center font-mono text-xs text-[var(--color-warn)]">
+          ⚠ All data is synthetic. Thresholds are demo constants. Not for clinical decisions.
+        </div>
 
         <main className="min-w-0 flex-1 p-4 md:p-6">
           <div className="mx-auto max-w-[1400px]">
@@ -132,7 +101,7 @@ export function AppShell() {
 function useDarkMode(): [boolean, (v: boolean) => void] {
   const [dark, setDark] = useState(() => {
     try {
-      const stored = localStorage.getItem('gvhax.theme');
+      const stored = localStorage.getItem('ctd.theme');
       if (stored) return stored === 'dark';
     } catch {
       /* private mode — fall through to the system preference */
@@ -143,7 +112,7 @@ function useDarkMode(): [boolean, (v: boolean) => void] {
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
     try {
-      localStorage.setItem('gvhax.theme', dark ? 'dark' : 'light');
+      localStorage.setItem('ctd.theme', dark ? 'dark' : 'light');
     } catch {
       /* ignore */
     }

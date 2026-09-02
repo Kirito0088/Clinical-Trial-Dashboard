@@ -17,7 +17,8 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { cn, compact, num } from '@/lib/utils';
+import { cn } from '@/lib/utils';
+import { compact, formatNumber as num } from '@/lib/format';
 
 /**
  * Thin Recharts wrappers with the theming already applied.

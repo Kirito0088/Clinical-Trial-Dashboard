@@ -1,4 +1,4 @@
-import type { ChatMessage } from '@gvhax/shared';
+import type { ChatMessage } from '../provider.js';
 import { env } from '../../../config/env.js';
 import { ProviderError, postJson, type AiProvider, type ChatOptions, type ChatResult } from '../provider.js';
 

@@ -1,5 +1,5 @@
 {
-  "name": "@gvhax/web",
+  "name": "@ctd/web",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -10,7 +10,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@gvhax/shared": "*",
+    "@ctd/shared": "*",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-dialog": "^1.1.6",
     "@radix-ui/react-dropdown-menu": "^2.1.6",
@@ -25,24 +25,18 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
-    "leaflet": "^1.9.4",
     "lucide-react": "^0.474.0",
-    "papaparse": "^5.5.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.54.2",
-    "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.1.5",
     "recharts": "^2.15.1",
-    "socket.io-client": "^4.8.1",
     "sonner": "^1.7.4",
     "tailwind-merge": "^3.0.1",
     "zod": "^3.24.1"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.6",
-    "@types/leaflet": "^1.9.16",
-    "@types/papaparse": "^5.3.15",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
     "@vitejs/plugin-react": "^4.3.4",

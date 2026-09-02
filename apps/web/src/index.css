@@ -1,5 +1,4 @@
 @import 'tailwindcss';
-@import 'leaflet/dist/leaflet.css';
 
 /*
  * Design tokens.
@@ -103,14 +102,6 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-}
-
-/* Leaflet paints its own white ground; keep it consistent in dark mode. */
-.dark .leaflet-container {
-  background: #0b0f14;
-}
-.leaflet-container {
-  font-family: var(--font-sans);
 }
 
 /* Live-tick pulse used by the status strip. Single ambient animation in the app. */
